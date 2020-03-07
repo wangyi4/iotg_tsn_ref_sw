@@ -38,7 +38,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "open62541.h"
+//#include "open62541.h"
+#include <open62541/client_config_default.h>
+#include <open62541/client.h>
+#include <open62541/client_highlevel.h>
 
 #define DEFAULT_LOG	"timestamps.txt"
 #define DELAY_USEC	10000
@@ -174,7 +177,9 @@ int main(int argc, char *argv[])
 		LOG("Connecting server#%d: %s\n", i, endpoint[i]);
 
 		/* Create a client and connect. */
-		client[m] = UA_Client_new(UA_ClientConfig_default);
+		//client[m] = UA_Client_new(UA_ClientConfig_default);
+		client[m] = UA_Client_new();
+		UA_ClientConfig_setDefault(UA_Client_getConfig(client[m]));
 
 		/* Connect with username would be:
 		 * retval = UA_Client_connect_username(client, "opc.tcp://localhost:4840", "user1", "password");

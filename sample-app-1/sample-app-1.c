@@ -61,7 +61,12 @@
 #define MAX_CHANNELS		2
 #define MAX_INDEXES		4
 
-#include "open62541.h"
+//#include "open62541.h"
+#include <open62541/server_config_default.h>
+#include <open62541/network_tcp.h>
+#include <open62541/server.h>
+
+
 
 /* These macros are defined in linux/posix-timers.h, but not able to
  * include the file.
@@ -153,11 +158,17 @@ static int get_ets(int fd, int index)
 	/* Init the server. */
 	UA_ServerNetworkLayer nl = UA_ServerNetworkLayerTCP(UA_ConnectionConfig_default,
 							    DEFAULT_OPC_UA_PORT, NULL);
-	UA_ServerConfig *config = UA_ServerConfig_new_default();
+	// changed by wangyi4, 20200305
+	//UA_ServerConfig *config = UA_ServerConfig_new_default();
 
+	//config->networkLayers = &nl;
+	//config->networkLayersSize = 1;
+	//UA_Server *server = UA_Server_new(config);
+	UA_Server *server = UA_Server_new();
+	UA_ServerConfig *config = UA_Server_getConfig(server);
+	UA_ServerConfig_setDefault(config);
 	config->networkLayers = &nl;
 	config->networkLayersSize = 1;
-	UA_Server *server = UA_Server_new(config);
 
 	/* Add a variable datasource node. */
 	/* 1) Set the variable attributes. */
@@ -314,14 +325,18 @@ static pid_t get_proc_pid(const char *name)
 	FILE *file;
 	char *endptr;
 	char buf[512];
+	char cmd[512];
 	pid_t found = -1;
 
-	file = popen("pgrep daemon_cl", "r");
+	sprintf(cmd, "pgrep %s", name);
+	file = popen(cmd, "r");
+	//printf("cmd: %s, file: %p\n", cmd, file);
+	//file = popen("pgrep daemon_cl", "r");
 	if (file) {
 		if (fgets(buf, sizeof(buf), file) != NULL)
 			found = strtol(buf, &endptr, 10);
 		pclose(file);
-		free(file);
+		//free(file);
 	}
 	return found;
 }
