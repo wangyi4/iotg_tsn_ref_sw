@@ -227,6 +227,7 @@ typedef struct {
 	uint16_t udp_dest;
 } socket_fd_ptrs;
 
+#if 0
 /*
  * The API for SO_TXTIME is the below struct and enum, which will be
  * provided by uapi/linux/net_tstamp.h in the near future.
@@ -235,6 +236,7 @@ struct sock_txtime {
 	clockid_t clockid;
 	uint16_t flags;
 };
+#endif
 
 typedef struct {
 	uint64_t offset;
@@ -242,6 +244,7 @@ typedef struct {
 	uint8_t num_packets;
 } tx_window;
 
+#if 0
 enum txtime_flags {
 	SOF_TXTIME_DEADLINE_MODE = (1 << 0),
 	SOF_TXTIME_REPORT_ERRORS = (1 << 1),
@@ -250,6 +253,7 @@ enum txtime_flags {
 	SOF_TXTIME_FLAGS_MASK = (SOF_TXTIME_FLAGS_LAST - 1) |
 				 SOF_TXTIME_FLAGS_LAST
 };
+#endif
 
 /********** globals *************/
 
