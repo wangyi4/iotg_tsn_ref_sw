@@ -65,7 +65,7 @@
 #include <open62541/server_config_default.h>
 #include <open62541/network_tcp.h>
 #include <open62541/server.h>
-
+#include <open62541/plugin/log_stdout.h>
 
 
 /* These macros are defined in linux/posix-timers.h, but not able to
@@ -96,9 +96,17 @@ read_ets(UA_Server *server, const UA_NodeId *sessionId, void *sessionContext,
 
 	int fd =  globptp;
 
+	printf("11111111111111\n");
+//	UA_DateTime now = UA_DateTime_now();
+//    UA_Variant_setScalarCopy(&value->value, &now,
+//                             &UA_TYPES[UA_TYPES_DATETIME]);
+//    value->hasValue = true;
+//    return UA_STATUSCODE_GOOD;
+
 	if (range) {
 		value->hasStatus = true;
 		value->status = UA_STATUSCODE_BADINDEXRANGEINVALID;
+	        printf("222222222\n");
 		return UA_STATUSCODE_GOOD;
 	}
 
@@ -109,10 +117,12 @@ read_ets(UA_Server *server, const UA_NodeId *sessionId, void *sessionContext,
 
 	ready = poll(&pfd, 1, timeout_ms);
 	if (ready < 0) {
+	        printf("3333333\n");
 		fprintf(stderr, "Failed to poll: %d (%s)\n", errno, strerror(errno));
 		return -1;
 	} else if (ready == 0) {
 		value->hasValue = false;
+	        printf("44444444\n");
 		return UA_STATUSCODE_GOOD;
 	}
 
@@ -121,6 +131,7 @@ read_ets(UA_Server *server, const UA_NodeId *sessionId, void *sessionContext,
 		if (n != sizeof(e)) {
 			fprintf(stderr, "read returns %lu bytes, expecting %lu bytes\n",
 				n, sizeof(e));
+	                printf("555555555\n");
 			return -1;
 		}
 
@@ -140,6 +151,7 @@ read_ets(UA_Server *server, const UA_NodeId *sessionId, void *sessionContext,
 		value->sourceTimestamp = UA_DateTime_now();
 	}
 
+	printf("666666666\n");
 	return UA_STATUSCODE_GOOD;
 }
 
@@ -149,6 +161,51 @@ write_ets(UA_Server *server, const UA_NodeId *sessionId, void *sessionContext,
 		 const UA_NumericRange *range, const UA_DataValue *data)
 {       /* Dummy implementation to avoid BadWriteNotSupported error */
 	return UA_STATUSCODE_GOOD;
+}
+
+
+static UA_StatusCode
+readCurrentTime(UA_Server *server,
+                const UA_NodeId *sessionId, void *sessionContext,
+                const UA_NodeId *nodeId, void *nodeContext,
+                UA_Boolean sourceTimeStamp, const UA_NumericRange *range,
+                UA_DataValue *dataValue) {
+    UA_DateTime now = UA_DateTime_now();
+    UA_Variant_setScalarCopy(&dataValue->value, &now,
+                             &UA_TYPES[UA_TYPES_DATETIME]);
+    dataValue->hasValue = true;
+    return UA_STATUSCODE_GOOD;
+}
+
+static UA_StatusCode
+writeCurrentTime(UA_Server *server,
+                 const UA_NodeId *sessionId, void *sessionContext,
+                 const UA_NodeId *nodeId, void *nodeContext,
+                 const UA_NumericRange *range, const UA_DataValue *data) {
+    UA_LOG_INFO(UA_Log_Stdout, UA_LOGCATEGORY_USERLAND,
+                "Changing the system time is not implemented");
+    return UA_STATUSCODE_BADINTERNALERROR;
+}
+
+static void
+addCurrentTimeDataSourceVariable(UA_Server *server) {
+    UA_VariableAttributes attr = UA_VariableAttributes_default;
+    attr.displayName = UA_LOCALIZEDTEXT("en-US", "Current time - data source");
+    attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE;
+
+    UA_NodeId currentNodeId = UA_NODEID_STRING(1, "current-time-datasource");
+    UA_QualifiedName currentName = UA_QUALIFIEDNAME(1, "current-time-datasource");
+    UA_NodeId parentNodeId = UA_NODEID_NUMERIC(0, UA_NS0ID_OBJECTSFOLDER);
+    UA_NodeId parentReferenceNodeId = UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES);
+    UA_NodeId variableTypeNodeId = UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE);
+
+    UA_DataSource timeDataSource;
+    timeDataSource.read = readCurrentTime;
+    timeDataSource.write = writeCurrentTime;
+    UA_Server_addDataSourceVariableNode(server, currentNodeId, parentNodeId,
+                                        parentReferenceNodeId, currentName,
+                                        variableTypeNodeId, attr,
+                                        timeDataSource, NULL, NULL);
 }
 
 static int get_ets(int fd, int index)
@@ -170,6 +227,7 @@ static int get_ets(int fd, int index)
 	config->networkLayers = &nl;
 	config->networkLayersSize = 1;
 
+#if 1	
 	/* Add a variable datasource node. */
 	/* 1) Set the variable attributes. */
 	UA_VariableAttributes attr = UA_VariableAttributes_default;
@@ -182,6 +240,7 @@ static int get_ets(int fd, int index)
 	UA_NodeId parent_node_id = UA_NODEID_NUMERIC(0, UA_NS0ID_OBJECTSFOLDER);
 	UA_NodeId parent_ref_node_id = UA_NODEID_NUMERIC(0, UA_NS0ID_ORGANIZES);
 	UA_NodeId variable_type = UA_NODEID_NUMERIC(0, UA_NS0ID_BASEDATAVARIABLETYPE);
+	//UA_NodeId variable_type = UA_NODEID_STRING(0, UA_NS0ID_BASEDATAVARIABLETYPE);
 	UA_QualifiedName browse_name = UA_QUALIFIEDNAME(1, "Time stamp datasource");
 
 	UA_DataSource data_source;
@@ -207,8 +266,11 @@ static int get_ets(int fd, int index)
 		nl.deleteMembers(&nl);
 		return -1;
 	}
+#endif
+	//addCurrentTimeDataSourceVariable(server);
 
 	/* Run the server loop. */
+	printf("UA_server_run....\n");
 	UA_Server_run(server, &running);
 
 	/* Disable the external time stamp feature. */

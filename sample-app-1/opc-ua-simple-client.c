@@ -44,7 +44,7 @@
 #include <open62541/client_highlevel.h>
 
 #define DEFAULT_LOG	"timestamps.txt"
-#define DELAY_USEC	10000
+#define DELAY_USEC	1000000
 #define MAX_BUF_LINE	256
 #define MAX_SERVERS	3
 
@@ -210,6 +210,8 @@ int main(int argc, char *argv[])
 
 	UA_Variant_init(&value);
 
+	//printf("type: %p, storageType=%d\n", value.type, value.storageType);
+	//printf("arraylength: %ld\n", value.arrayLength);
 	/* NodeId of the variable holding the current time,
 	 * set by the server in sample-app-1.c
 	 */
@@ -219,9 +221,9 @@ int main(int argc, char *argv[])
 		for (i = 0; i < n; i++) {
 
 			retval = UA_Client_readValueAttribute(client[i], nodeId, &value);
-
-			if (retval == UA_STATUSCODE_GOOD &&
-			    UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_STRING])) {
+                        LOG("retval=%d UA_STATUSCODE_GOOD=%d\n", retval, UA_STATUSCODE_GOOD);
+			if (retval == UA_STATUSCODE_GOOD ) {
+			    if (UA_Variant_hasScalarType(&value, &UA_TYPES[UA_TYPES_STRING])) {
 
 				timestamp_str = *(UA_String *) value.data;
 				timestamp_str.data[timestamp_str.length] = 0;
@@ -233,6 +235,10 @@ int main(int argc, char *argv[])
 					if (write(fd, buf, strlen(buf)) == -1)
 						fprintf(stderr, "Error during write: %m\n");
 				}
+			    } else {
+				    //printf("type: %p, storageType=%d\n", value.type, value.storageType);
+				    //printf("arraylength: %ld\n", value.arrayLength);
+			    }
 			}
 		}
 
