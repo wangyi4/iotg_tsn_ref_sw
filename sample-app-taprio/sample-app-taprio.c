@@ -101,6 +101,13 @@
 #define pr_err(s)	fprintf(stderr, s "\n") /* Error message output */
 #define pr_info(s)	fprintf(stdout, s "\n") /* Standard message output */
 
+
+#define trace() \
+{\
+	printf("%s(%d): \n", __func__, __LINE__);\
+        fflush(stdout);\
+}
+
 /* globals */
 static const char *version_str = "sample-app-taprio v" VERSION_STR "\n"
 				 "Copyright (c) 2019, Intel Corporation\n";
@@ -472,7 +479,7 @@ int run_check_filter_cmd(char *cmd, char **buf)
 		++line_count;
 	}
 	pclose(fp);
-	free(fp);
+	//free(fp);
 	fp = NULL;
 
 	return line_count;
@@ -857,8 +864,9 @@ int get_mac_address(char *interface)
 	int rc;
 
 	lsock = socket(PF_PACKET, SOCK_RAW, htons(0x800));
-	if (lsock < 0)
+	if (lsock < 0) {
 		return -1;
+	}
 
 	memset(&if_request, 0, sizeof(if_request));
 	strncpy(if_request.ifr_name, interface,
@@ -2399,8 +2407,9 @@ int main(int argc, char *argv[])
 #endif
 
 		/* Run RX filter command via ethtool */
-		if (config_rx_filter(interface) < 0)
+		if (config_rx_filter(interface) < 0) {
 			goto rx_out;
+		}
 		pr_info("Filter configuration done");
 
 		/* Create file for data logging */
